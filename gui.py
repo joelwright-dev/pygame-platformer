@@ -12,15 +12,16 @@ class GUI(pygame.sprite.Sprite):
         if self.full:
             self.half = False
             self.image = pygame.Surface((8,8))
-            self.image.fill("red")
+            self.image = pygame.image.load('graphics/gui/hearts/heart_full.png')
             self.rect = self.image.get_rect(topleft = self.pos)
             self.display_surface = self.surface
         elif self.half:
-            self.image = pygame.Surface((4,8))
-            self.image.fill("red")
+            self.image = pygame.Surface((8,8))
+            self.image = pygame.image.load('graphics/gui/hearts/heart_half.png')
             self.rect = self.image.get_rect(topleft = self.pos)
             self.display_surface = self.surface
         else:
             self.image = pygame.Surface((8,8))
+            self.image = pygame.image.load('graphics/gui/hearts/heart_empty.png')
             self.rect = self.image.get_rect(topleft = self.pos)
             self.display_surface = self.surface

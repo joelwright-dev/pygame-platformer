@@ -9,7 +9,7 @@ SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE
 CLOCK = pygame.time.Clock()
 objects = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 level = Level(LEVEL_MAP, objects)
-background = Background(objects,level)
+background = Background(objects,level,True,False)
 
 while True:
     for event in pygame.event.get():
@@ -24,8 +24,9 @@ while True:
             SCREEN.blit(pygame.transform.scale(objects, SCREEN.get_size()), (0, 0))
             pygame.display.update()
 
-    background.update()
-    background.render()
+    if not level.gameover:
+        background.update()
+        background.render()
     level.run()
 
     SCREEN.blit(pygame.transform.scale(objects, SCREEN.get_size()), (0, 0))

@@ -1,7 +1,10 @@
 import pygame
+from text import Text
+from button import Button
 
 class Background():
-    def __init__(self, display_surface, level):
+    def __init__(self, display_surface, level, shift_y, gameover):
+        self.shift_y = shift_y
         self.level = level
         self.display_surface = display_surface
         self.bgimage = pygame.image.load('graphics/background/background_0.png')
@@ -11,27 +14,53 @@ class Background():
         self.rectBGimgmid = self.bgimagemid.get_rect()
         self.rectBGimgfor = self.bgimagefor.get_rect()
 
-        self.bgY1 = -52
-        self.bgX1 = 0
+        self.gameover = gameover
 
-        self.bgY1mid = -52
-        self.bgX1mid = 0
+        if self.shift_y:
+            self.bgY1 = -52
+            self.bgX1 = 0
 
-        self.bgY1for = -52
-        self.bgX1for = 0
+            self.bgY1mid = -52
+            self.bgX1mid = 0
+
+            self.bgY1for = -52
+            self.bgX1for = 0
+        
+        else:
+            self.bgY1 = -32
+            self.bgX1 = 0
+
+            self.bgY1mid = -32
+            self.bgX1mid = 0
+
+            self.bgY1for = -32
+            self.bgX1for = 0
         
     def update(self):
-        self.bgX1 -= self.level.world_shift * -0.1
-        if self.bgX1 <= -self.rectBGimg.width:
-            self.bgX1 = self.rectBGimg.width
+        if self.shift_y:
+            self.bgX1 -= self.level.world_shift * -0.1
+            if self.bgX1 <= -self.rectBGimg.width:
+                self.bgX1 = self.rectBGimg.width
 
-        self.bgX1mid -= self.level.world_shift * -0.15
-        if self.bgX1mid <= -self.rectBGimg.width:
-            self.bgX1mid = self.rectBGimg.width
+            self.bgX1mid -= self.level.world_shift * -0.15
+            if self.bgX1mid <= -self.rectBGimg.width:
+                self.bgX1mid = self.rectBGimg.width
 
-        self.bgX1for -= self.level.world_shift * -0.25
-        if self.bgX1for <= -self.rectBGimg.width:
-            self.bgX1for = self.rectBGimg.width
+            self.bgX1for -= self.level.world_shift * -0.25
+            if self.bgX1for <= -self.rectBGimg.width:
+                self.bgX1for = self.rectBGimg.width
+        else:
+            self.bgX1 -= self.level.world_shift * -0.1
+            if self.bgX1 <= -self.rectBGimg.width:
+                self.bgX1 = self.rectBGimg.width
+
+            self.bgX1mid -= self.level.world_shift * -0.15
+            if self.bgX1mid <= -self.rectBGimg.width:
+                self.bgX1mid = self.rectBGimg.width
+
+            self.bgX1for -= self.level.world_shift * -0.25
+            if self.bgX1for <= -self.rectBGimg.width:
+                self.bgX1for = self.rectBGimg.width
             
     def render(self):
         self.rel_x = self.bgX1 % self.bgimage.get_rect().width
@@ -51,3 +80,9 @@ class Background():
         self.display_surface.blit(self.bgimagefor, (self.rel_xfor, self.bgY1for))
         if self.rel_xfor < self.display_surface.get_rect().width:
             self.display_surface.blit(self.bgimagefor, (self.rel_xfor + self.bgimagefor.get_rect().width, self.bgY1for))
+
+        if self.gameover:
+            header = Text('You Died', 'black', self.display_surface, (self.display_surface.get_rect().width/2, self.display_surface.get_rect().height/6), 7)
+            header.draw()
+            button = Button('Restart', 'white', 'black', self.display_surface, 7, (self.display_surface.get_rect().width/2, self.display_surface.get_rect().height/4))
+            button.draw()

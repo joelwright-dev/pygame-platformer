@@ -2,7 +2,7 @@
 LEVEL_MAP = [
     '  N                                                                     N  ',
     '  N                                                                     N  ',
-    'S NF        E P E       S  Q F  Q      S F                              N  ',
+    'S NF          P         S  Q F  Q      S F                              N  ',
     'TTTH        KXXXXM    ITTTTTTTTTTH   ITTTTTH                            N  ',
     'CCCCTHQ             S LCCCCCCCCCCR   LCCCCCR                            N  ',
     'CCCCCCH         F ITTTCCCCCCCCCCCR   JBBBBBG                            N  ',

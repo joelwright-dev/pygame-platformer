@@ -5,6 +5,7 @@ from enemy import Enemy
 from gui import GUI
 from settings import TILE_SIZE, SCREEN_WIDTH
 from particles import ParticleEffect
+from background import Background
 
 class Level:
     def __init__(self, level_data, surface):
@@ -18,6 +19,8 @@ class Level:
         #dust
         self.dust_sprite = pygame.sprite.GroupSingle()
         self.player_on_ground = False
+
+        self.gameover = False
 
     def create_jump_particles(self,pos):
         if self.player.sprite.facing_right:
@@ -208,70 +211,67 @@ class Level:
     def update_gui(self):
         player = self.player.sprite
         health = int(player.health)
-        if(health > 0):
-            first = int(str(health)[0])
-        if(len(str(health)) >= 2):
-            second = int(str(health)[1])
         for enemy in self.enemies.sprites():
             if player.rect.colliderect(enemy.rect) and health > 0:
                 player.health -= 0.1
 
         for index,heart in enumerate(self.gui):
-            if health > 0:
-                if (index == first):
-                    if (len(str(health)) >= 2 and second <= 5 and len(str(health)) > 1):
-                        heart.full = False
-                        heart.half = True
-                    elif len(str(health)) > 1:
-                        heart.full = True
-                        heart.half = False
-                    else:
-                        heart.full = False
-                        heart.half = False
-                elif (len(str(health)) >= 1 and index < first and len(str(health)) > 1):
-                    heart.full = True
-                    heart.half = False
-                else:
-                    heart.full = False
-                    heart.half = False
-            else:
+            index = index+1
+            if health == 100:
+                heart.full = True
+                heart.half = False
+            if health == int(str(str(index - 1) + "5")):
+                heart.full = False
+                heart.half = True
+            elif health == int(str(str(index - 1) + "0")):
                 heart.full = False
                 heart.half = False
-
-            print(int(health), heart.full, heart.half)
+            elif health <= 0:
+                self.gameover = True
+                self.display_surface.fill('black')
+                self.background = Background(self.display_surface,self, False, self.gameover)
 
     def run(self):
-        #dust particles
-        self.dust_sprite.update(self.world_shift)
-        self.dust_sprite.draw(self.display_surface)
+        if not self.gameover:
+            #dust particles
+            self.dust_sprite.update(self.world_shift)
+            self.dust_sprite.draw(self.display_surface)
 
-        #Tiles
-        self.tiles.update(self.world_shift)
-        self.tiles.draw(self.display_surface)
-        self.border.update(self.world_shift)
-        self.border.draw(self.display_surface)
+            #Tiles
+            self.tiles.update(self.world_shift)
+            self.tiles.draw(self.display_surface)
+            self.border.update(self.world_shift)
+            self.border.draw(self.display_surface)
+            
+            #Player
+            self.player.update()
+            self.horizontal_movement_collision()
+            self.get_player_on_ground()
+            self.vertical_movement_collision()
+            self.create_landing_dust()
+            self.player.draw(self.display_surface)
+
+            self.update_gui()
+
+            self.gui.update()
+            self.gui.draw(self.display_surface)
+
+            #enemies
+            self.enemies.update(self.world_shift)
+            self.horizontal_movement_collision_enemy()
+            self.vertical_movement_collision_enemy()
+            self.enemies.draw(self.display_surface)
+
+            self.decor.update(self.world_shift)
+            self.decor.draw(self.display_surface)
+            self.scroll_x()
         
-        #Player
-        self.player.update()
-        self.horizontal_movement_collision()
-        self.get_player_on_ground()
-        self.vertical_movement_collision()
-        self.create_landing_dust()
-        self.player.draw(self.display_surface)
-
-        self.update_gui()
-
-        self.gui.update()
-        self.gui.draw(self.display_surface)
-
-        #enemies
-        self.enemies.update(self.world_shift)
-        self.horizontal_movement_collision_enemy()
-        self.vertical_movement_collision_enemy()
-        self.enemies.draw(self.display_surface)
-
-        self.player_collision_enemy()
-
-        self.decor.update(self.world_shift)
-        self.decor.draw(self.display_surface)
-        self.scroll_x()
+        else:
+            self.tiles.empty()
+            self.decor.empty()
+            self.enemies.empty()
+            self.border.empty()
+            self.gui.empty()
+            self.world_shift = 1
+            self.background.render()
+            self.background.update()
