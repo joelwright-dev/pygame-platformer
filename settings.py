@@ -1,3 +1,5 @@
+import os, pygame
+
 #RESOLUTION OF 32x32 TILES
 LEVEL_MAP = [
     '  N                                                                     N  ',

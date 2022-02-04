@@ -1,4 +1,5 @@
-import pygame, sys
+import pygame, sys, os
+import platform
 from settings import *
 from level import Level
 from background import Background
@@ -6,9 +7,17 @@ from text import Text
 from button import Button
 from pygame import mixer
 
+if platform.system() == "Windows":
+    import win32gui, win32con
+
+    hwnd = win32gui.GetForegroundWindow()
+    win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
+elif platform.system() == "Linux":
+    print("bruh")
+
 pygame.init()
 
-SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE, 32)
+SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE, 32, vsync=1)
 CLOCK = pygame.time.Clock()
 objects = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 
@@ -22,6 +31,8 @@ click_s.set_volume(0.1)
 
 while True:
     click = False
+    
+    #pygame.event.post(pygame.event.Event(pygame.VIDEOEXPOSE))
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
