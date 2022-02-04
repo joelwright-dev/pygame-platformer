@@ -3,11 +3,13 @@ A cross compatible, open source, 2D platformer built with pygame
 
 ## Instructions (running from source)
 Install the following using the terminal
+
 ``bash
   pip install pygame
 ``
 
 Run main.py
+
 ``bash
   python main.py
 ``
