@@ -6,18 +6,12 @@ from background import Background
 from text import Text
 from button import Button
 from pygame import mixer
-
-if platform.system() == "Windows":
-    import win32gui, win32con
-
-    hwnd = win32gui.GetForegroundWindow()
-    win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
-elif platform.system() == "Linux":
-    print("bruh")
+import pygame._sdl2
 
 pygame.init()
 
 SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE, 32, vsync=1)
+window = pygame._sdl2.Window.from_display_module()
 CLOCK = pygame.time.Clock()
 objects = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 
@@ -28,6 +22,15 @@ menu = True
 mixer.init()
 click_s = mixer.Sound('sounds/select.wav')
 click_s.set_volume(0.1)
+
+if platform.system() == "Windows":
+    import win32gui, win32con
+
+    hwnd = win32gui.GetForegroundWindow()
+    win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
+    
+elif platform.system() == "Linux":
+    window.maximize()
 
 while True:
     click = False
