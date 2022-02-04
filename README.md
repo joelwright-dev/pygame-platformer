@@ -1,4 +1,4 @@
-# the-weird-world
+# The Weird World
 A cross compatible, open source, 2D platformer built with pygame
 
 ## Instructions (running from source)
