@@ -1,9 +1,8 @@
 import pygame
-from text import Text
-from button import Button
 
-class Background():
+class Background(pygame.sprite.Sprite):
     def __init__(self, display_surface, level, shift_y, gameover):
+        super().__init__()
         self.shift_y = shift_y
         self.level = level
         self.display_surface = display_surface
@@ -13,8 +12,6 @@ class Background():
         self.rectBGimg = self.bgimage.get_rect()
         self.rectBGimgmid = self.bgimagemid.get_rect()
         self.rectBGimgfor = self.bgimagefor.get_rect()
-
-        self.gameover = gameover
 
         if self.shift_y:
             self.bgY1 = -52
@@ -62,7 +59,9 @@ class Background():
             if self.bgX1for <= -self.rectBGimg.width:
                 self.bgX1for = self.rectBGimg.width
             
-    def render(self):
+    def render(self, click):
+        self.click = click
+
         self.rel_x = self.bgX1 % self.bgimage.get_rect().width
         self.display_surface.blit(self.bgimage, (self.rel_x - self.bgimage.get_rect().width, self.bgY1))
         self.display_surface.blit(self.bgimage, (self.rel_x, self.bgY1))
@@ -80,9 +79,3 @@ class Background():
         self.display_surface.blit(self.bgimagefor, (self.rel_xfor, self.bgY1for))
         if self.rel_xfor < self.display_surface.get_rect().width:
             self.display_surface.blit(self.bgimagefor, (self.rel_xfor + self.bgimagefor.get_rect().width, self.bgY1for))
-
-        if self.gameover:
-            header = Text('You Died', 'black', self.display_surface, (self.display_surface.get_rect().width/2, self.display_surface.get_rect().height/6), 7)
-            header.draw()
-            button = Button('Restart', 'white', 'black', self.display_surface, 7, (self.display_surface.get_rect().width/2, self.display_surface.get_rect().height/4))
-            button.draw()

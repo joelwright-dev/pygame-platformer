@@ -1,15 +1,26 @@
 import pygame
 from tiles import Tile
+from pickup import Pickup
 from player import Player
 from enemy import Enemy
 from gui import GUI
 from settings import TILE_SIZE, SCREEN_WIDTH
 from particles import ParticleEffect
 from background import Background
+from pygame import mixer
 
 class Level:
     def __init__(self, level_data, surface):
         super().__init__()
+        mixer.init
+        self.enemydeath_s = mixer.Sound('sounds/death.wav')
+        self.enemydeath_s.set_volume(0.1)
+        self.health_s = mixer.Sound('sounds/heal.wav')
+        self.health_s.set_volume(0.1)
+        self.playerdeath_s = mixer.Sound('sounds/playerdeath.wav')
+        self.playerdeath_s.set_volume(0.1)
+        self.hurt_s = mixer.Sound('sounds/hurt.wav')
+        self.hurt_s.set_volume(0.1)
         self.display_surface = surface
         self.world_shift = 0
         self.current_x = 0
@@ -23,10 +34,7 @@ class Level:
         self.gameover = False
 
     def create_jump_particles(self,pos):
-        if self.player.sprite.facing_right:
-            pos -= pygame.math.Vector2(10,5)
-        else:
-            pos += pygame.math.Vector2(10,-5)
+        pos -= pygame.math.Vector2(0,8)
         jump_particle_sprite = ParticleEffect(pos,'jump')
         self.dust_sprite.add(jump_particle_sprite)
 
@@ -39,9 +47,9 @@ class Level:
     def create_landing_dust(self):
         if not self.player_on_ground and self.player.sprite.on_ground and not self.dust_sprite.sprites():
             if self.player.sprite.facing_right:
-                offset = pygame.math.Vector2(10,15)
+                offset = pygame.math.Vector2(0,8)
             else:
-                offset = pygame.math.Vector2(-10,15)
+                offset = pygame.math.Vector2(0,8)
             fall_dust_particle = ParticleEffect(self.player.sprite.rect.midbottom - offset, 'land')
             self.dust_sprite.add(fall_dust_particle)
 
@@ -52,6 +60,7 @@ class Level:
         self.decor = pygame.sprite.Group()
         self.border = pygame.sprite.Group()
         self.enemies = pygame.sprite.Group()
+        self.pickups = pygame.sprite.Group()
         for row_index,row in enumerate(layout):
             for col_index,col in enumerate(row):
                 x = col_index * TILE_SIZE
@@ -63,7 +72,7 @@ class Level:
                         gui = GUI((4 + (8*i) + (i*4),4), self.display_surface)
                         self.gui.add(gui)
                 elif col != " ":
-                    if col != 'F' and col != "S" and col != "Q" and col != 'D' and col != "N" and col != "E":
+                    if col != 'F' and col != "S" and col != "Q" and col != 'D' and col != "N" and col != "E" and col != "+" and col != "$":
                         tile = Tile((x,y),TILE_SIZE,col)
                         self.tiles.add(tile)
                     else:
@@ -73,6 +82,12 @@ class Level:
                         elif col == "E":
                             enemy_sprite = Enemy((x,y),self.display_surface, self.player)
                             self.enemies.add(enemy_sprite)
+                        elif col == "+":
+                            health_pickup = Pickup((x,y), self.display_surface, self.player, "heart")
+                            self.pickups.add(health_pickup)
+                        elif col == "$":
+                            coin_pickup = Pickup((x,y), self.display_surface, self.player, "coin")
+                            self.pickups.add(coin_pickup)
                         else:
                             tile = Tile((x,y),TILE_SIZE,col)
                             self.decor.add(tile)
@@ -83,14 +98,14 @@ class Level:
         direction_x = player.direction.x
 
         if player_x < SCREEN_WIDTH / 8 and direction_x < 0:
-            self.world_shift = 3
+            self.world_shift = 2
             player.speed = 0
         elif player_x > SCREEN_WIDTH * 7/8 and direction_x > 0:
-            self.world_shift = -3
+            self.world_shift = -2
             player.speed = 0
         else:
             self.world_shift = 0
-            player.speed = 3
+            player.speed = 2
 
     def horizontal_movement_collision(self):
         player = self.player.sprite
@@ -206,38 +221,70 @@ class Level:
         player = self.player.sprite
         for enemy in self.enemies.sprites():
             if player.rect.colliderect(enemy.rect):
-                player.image.fill('blue')
+                if enemy.rect.top == player.rect.bottom:
+                    health_pickup = Pickup(enemy.rect.topleft, self.display_surface, self.player, "heart")
+                    self.pickups.add(health_pickup)
+                    print("bruh")
+                    enemy.kill()
+
+    def player_collision_pickup(self):
+        player = self.player.sprite
+        for pickup in self.pickups.sprites():
+            if player.rect.colliderect(pickup.rect):
+                if pickup.type == 'heart':
+                    if int(player.health) <= 90:
+                        self.player.sprite.health += 10
+                        self.health_s.play()
+                        pickup.kill()
+                if pickup.type == 'coin':
+                    print("picked up coin")
+        self.update_gui()
 
     def update_gui(self):
         player = self.player.sprite
         health = int(player.health)
         for enemy in self.enemies.sprites():
             if player.rect.colliderect(enemy.rect) and health > 0:
-                player.health -= 0.1
+                if enemy.rect.top == player.rect.bottom-2:
+                    health_pickup = Pickup(enemy.rect.topleft, self.display_surface, self.player, "heart")
+                    self.pickups.add(health_pickup)
+                    self.player.sprite.direction += pygame.Vector2(-10)
+                    self.enemydeath_s.play()
+                    enemy.kill()
+                else:
+                    player.health -= 0.1
+                    if str(player.health)[1] == "5" or str(player.health)[1] == "0":
+                        self.hurt_s.play()
 
         for index,heart in enumerate(self.gui):
             index = index+1
             if health == 100:
                 heart.full = True
                 heart.half = False
+            elif health <= 0:
+                self.playerdeath_s.play()
+                self.gameover = True
+                self.display_surface.fill('black')
+                self.background = Background(self.display_surface,self, False, True)
             if health == int(str(str(index - 1) + "5")):
                 heart.full = False
                 heart.half = True
+            elif health >= int(str(str(index - 1) + "5")):
+                heart.full = True
+                heart.half = False
             elif health == int(str(str(index - 1) + "0")):
                 heart.full = False
                 heart.half = False
-            elif health <= 0:
-                self.gameover = True
-                self.display_surface.fill('black')
-                self.background = Background(self.display_surface,self, False, self.gameover)
 
-    def run(self):
+    def run(self, click):
         if not self.gameover:
             #dust particles
             self.dust_sprite.update(self.world_shift)
             self.dust_sprite.draw(self.display_surface)
 
             #Tiles
+            self.pickups.update(self.world_shift)
+            self.pickups.draw(self.display_surface)
             self.tiles.update(self.world_shift)
             self.tiles.draw(self.display_surface)
             self.border.update(self.world_shift)
@@ -250,6 +297,7 @@ class Level:
             self.vertical_movement_collision()
             self.create_landing_dust()
             self.player.draw(self.display_surface)
+            self.player_collision_pickup()
 
             self.update_gui()
 
@@ -272,6 +320,7 @@ class Level:
             self.enemies.empty()
             self.border.empty()
             self.gui.empty()
+            self.pickups.empty()
             self.world_shift = 1
-            self.background.render()
+            self.background.render(click)
             self.background.update()

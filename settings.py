@@ -1,11 +1,11 @@
 #RESOLUTION OF 32x32 TILES
 LEVEL_MAP = [
     '  N                                                                     N  ',
-    '  N                                                                     N  ',
-    'S NF          P         S  Q F  Q      S F                              N  ',
-    'TTTH        KXXXXM    ITTTTTTTTTTH   ITTTTTH                            N  ',
+    '  N                        $                                            N  ',
+    'S NF          P +       S  Q F  Q      S F                              N  ',
+    'TTTH  $     KXXXXM    ITTTTTTTTTTH   ITTTTTH                            N  ',
     'CCCCTHQ             S LCCCCCCCCCCR   LCCCCCR                            N  ',
-    'CCCCCCH         F ITTTCCCCCCCCCCCR   JBBBBBG                            N  ',
+    'CCCCCCH         F ITTTCCCCCCCCCCCR   JBBBBBG    $                       N  ',
     'CCCCCCCH      ITTTCCCCCCCCCCCCCCCR    D   D                             N  ',
     'CCCCCCCR FS F LCCCCCCCCCCCCCCCCCCR  FQQ S QQ  F Q S QS EF F QS  F F  Q SN  ',
     'CCCCCCCCTTTTTTCCCCCCCCCCCCCCCCCCCCTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
