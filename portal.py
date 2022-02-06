@@ -1,21 +1,16 @@
 import pygame
 from support import import_folder
 
-class Pickup(pygame.sprite.Sprite):
-    def __init__(self, pos, surface, player, type):
+class Portal(pygame.sprite.Sprite):
+    def __init__(self, pos, surface):
         super().__init__()
         self.pos = pos
         self.surface = surface
-        self.player = player
-        self.image = pygame.Surface((16,16))
+        self.image = pygame.Surface((16,32))
         self.rect = self.image.get_rect(topleft = pos)
         self.frame_index = 0
         self.animation_speed = 0.1
-        self.type = type
-        if self.type == "heart":
-            self.frames = import_folder('graphics/level/pickups/heart')
-        if self.type == "artifact":
-            self.frames = import_folder('graphics/level/pickups/artifact')
+        self.frames = import_folder('graphics/level/end_portal')
 
     def animate(self):
         self.frame_index += self.animation_speed

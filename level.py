@@ -6,6 +6,7 @@ from enemy import Enemy
 from gui import GUI
 from settings import TILE_SIZE, SCREEN_WIDTH
 from particles import ParticleEffect
+from portal import Portal
 from background import Background
 from pygame import mixer
 
@@ -23,7 +24,8 @@ class Level:
         self.hurt_s.set_volume(0.1)
         self.display_surface = surface
         self.world_shift = 0
-        self.current_x = 0
+        self.current_x_p = 0
+        self.current_x_e = 0
 
         self.setup_level(level_data)
 
@@ -32,6 +34,8 @@ class Level:
         self.player_on_ground = False
 
         self.gameover = False
+
+        self.artifact_increment = False
 
     def create_jump_particles(self,pos):
         pos -= pygame.math.Vector2(0,8)
@@ -61,6 +65,7 @@ class Level:
         self.border = pygame.sprite.Group()
         self.enemies = pygame.sprite.Group()
         self.pickups = pygame.sprite.Group()
+        self.portals = pygame.sprite.Group()
         for row_index,row in enumerate(layout):
             for col_index,col in enumerate(row):
                 x = col_index * TILE_SIZE
@@ -68,11 +73,15 @@ class Level:
                 if col == "P":
                     player_sprite = Player((x,y),self.display_surface,self.create_jump_particles)
                     self.player.add(player_sprite)
+                    self.heart_count = -1
                     for i in range(0,int(self.player.sprite.health/10)):
-                        gui = GUI((4 + (8*i) + (i*4),4), self.display_surface)
+                        self.heart_count += 1
+                        gui = GUI((4 + (8*i) + (i*4),4), self.display_surface, 0, False)
                         self.gui.add(gui)
+                    gui = GUI((256-12,4), self.display_surface, 0, True)
+                    self.gui.add(gui)
                 elif col != " ":
-                    if col != 'F' and col != "S" and col != "Q" and col != 'D' and col != "N" and col != "E" and col != "+" and col != "$":
+                    if col != 'F' and col != "S" and col != "Q" and col != 'D' and col != "N" and col != "E" and col != "+" and col != "$" and col != "%":
                         tile = Tile((x,y),TILE_SIZE,col)
                         self.tiles.add(tile)
                     else:
@@ -86,8 +95,11 @@ class Level:
                             health_pickup = Pickup((x,y), self.display_surface, self.player, "heart")
                             self.pickups.add(health_pickup)
                         elif col == "$":
-                            coin_pickup = Pickup((x,y), self.display_surface, self.player, "coin")
-                            self.pickups.add(coin_pickup)
+                            artifact_pickup = Pickup((x,y), self.display_surface, self.player, "artifact")
+                            self.pickups.add(artifact_pickup)
+                        elif col == "%":
+                            portal = Portal((x,y), self.display_surface)
+                            self.portals.add(portal)
                         else:
                             tile = Tile((x,y),TILE_SIZE,col)
                             self.decor.add(tile)
@@ -116,11 +128,11 @@ class Level:
                 if player.direction.x < 0:
                     player.rect.left = sprite.rect.right
                     player.on_left = True
-                    self.current_x = player.rect.left
+                    self.current_x_p = player.rect.left
                 elif player.direction.x > 0:
                     player.rect.right = sprite.rect.left
                     player.on_right = True
-                    self.current_x = player.rect.right
+                    self.current_x_p = player.rect.right
 
         for sprite in self.border.sprites():
             if sprite.rect.colliderect(player.rect):
@@ -128,17 +140,26 @@ class Level:
                     player.rect.left = sprite.rect.right
                     player.on_left = True
                     player.touching_border = True
-                    self.current_x = player.rect.left
+                    self.current_x_p = player.rect.left
                 elif player.direction.x > 0:
                     player.rect.right = sprite.rect.left
                     player.on_right = True
                     player.touching_border = True
-                    self.current_x = player.rect.right
+                    self.current_x_p = player.rect.right
+
+        for enemy in self.enemies.sprites():
+            if enemy.rect.colliderect(player.rect):
+                if player.direction.x < 0:
+                    player.rect.left = enemy.rect.right
+                    self.current_x_p = player.rect.left
+                elif player.direction.x > 0:
+                    player.rect.right = enemy.rect.left
+                    self.current_x_p = player.rect.right
         
-        if player.on_left and (player.rect.left < self.current_x or player.direction.x >= 0):
+        if player.on_left and (player.rect.left < self.current_x_p or player.direction.x >= 0):
             player.on_left = False
             player.touching_border = False
-        if player.on_right and (player.rect.right > self.current_x or player.direction.x <= 0):
+        if player.on_right and (player.rect.right > self.current_x_p or player.direction.x <= 0):
             player.on_right = False
             player.touching_border = False
 
@@ -171,11 +192,11 @@ class Level:
                     if enemy.direction.x < 0:
                         enemy.rect.left = sprite.rect.right
                         enemy.on_left = True
-                        self.current_x = enemy.rect.left
+                        self.current_x_e = enemy.rect.left
                     elif enemy.direction.x > 0:
                         enemy.rect.right = sprite.rect.left
                         enemy.on_right = True
-                        self.current_x = enemy.rect.right
+                        self.current_x_e = enemy.rect.right
 
             for sprite in self.border.sprites():
                 if sprite.rect.colliderect(enemy.rect):
@@ -183,17 +204,26 @@ class Level:
                         enemy.rect.left = sprite.rect.right
                         enemy.on_left = True
                         enemy.touching_border = True
-                        self.current_x = enemy.rect.left
+                        self.current_x_e = enemy.rect.left
                     elif enemy.direction.x > 0:
                         enemy.rect.right = sprite.rect.left
                         enemy.on_right = True
                         enemy.touching_border = True
-                        self.current_x = enemy.rect.right
+                        self.current_x_e = enemy.rect.right
+
+            player = self.player.sprite
+            if player.rect.colliderect(enemy.rect):
+                if enemy.direction.x < 0:
+                    enemy.rect.left = player.rect.right
+                    self.current_x_e = enemy.rect.left
+                elif enemy.direction.x > 0:
+                    enemy.rect.right = player.rect.left
+                    self.current_x_e = enemy.rect.right
             
-            if enemy.on_left and (enemy.rect.left < self.current_x or enemy.direction.x >= 0):
+            if enemy.on_left and (enemy.rect.left < self.current_x_e or enemy.direction.x >= 0):
                 enemy.on_left = False
                 enemy.touching_border = False
-            if enemy.on_right and (enemy.rect.right > self.current_x or enemy.direction.x <= 0):
+            if enemy.on_right and (enemy.rect.right > self.current_x_e or enemy.direction.x <= 0):
                 enemy.on_right = False
                 enemy.touching_border = False
 
@@ -224,7 +254,6 @@ class Level:
                 if enemy.rect.top == player.rect.bottom:
                     health_pickup = Pickup(enemy.rect.topleft, self.display_surface, self.player, "heart")
                     self.pickups.add(health_pickup)
-                    print("bruh")
                     enemy.kill()
 
     def player_collision_pickup(self):
@@ -236,15 +265,32 @@ class Level:
                         self.player.sprite.health += 10
                         self.health_s.play()
                         pickup.kill()
-                if pickup.type == 'coin':
-                    print("picked up coin")
+                    elif int(player.health) < 100:
+                        self.player.sprite.health += 100-int(player.health)
+                        self.health_s.play()
+                        pickup.kill()
+                if pickup.type == 'artifact':
+                    self.artifact_increment = True
+                    pickup.kill()
         self.update_gui()
+
+    def player_collision_portal(self):
+        player = self.player.sprite
+        for portal in self.portals.sprites():
+            if player.rect.colliderect(portal.rect):
+                print("level complete")
+                with open('data/current_level.dat', 'r+') as f:
+                    current_level = int(f.readlines()[0])
+                f.close()
+                with open('data/current_level.dat', 'w') as f:
+                    f.write(str(current_level+1))
 
     def update_gui(self):
         player = self.player.sprite
         health = int(player.health)
         for enemy in self.enemies.sprites():
-            if player.rect.colliderect(enemy.rect) and health > 0:
+            if player.rect.colliderect((enemy.rect.x-2,enemy.rect.y,enemy.rect.width+4,enemy.rect.height)) and health > 0:
+                enemy.touching_player = True
                 if enemy.rect.top == player.rect.bottom-2:
                     health_pickup = Pickup(enemy.rect.topleft, self.display_surface, self.player, "heart")
                     self.pickups.add(health_pickup)
@@ -255,26 +301,32 @@ class Level:
                     player.health -= 0.1
                     if str(player.health)[1] == "5" or str(player.health)[1] == "0":
                         self.hurt_s.play()
+            else:
+                enemy.touching_player = False
 
         for index,heart in enumerate(self.gui):
-            index = index+1
-            if health == 100:
-                heart.full = True
-                heart.half = False
-            elif health <= 0:
-                self.playerdeath_s.play()
-                self.gameover = True
-                self.display_surface.fill('black')
-                self.background = Background(self.display_surface,self, False, True)
-            if health == int(str(str(index - 1) + "5")):
-                heart.full = False
-                heart.half = True
-            elif health >= int(str(str(index - 1) + "5")):
-                heart.full = True
-                heart.half = False
-            elif health == int(str(str(index - 1) + "0")):
-                heart.full = False
-                heart.half = False
+            if not heart.artifact:
+                index = index+1
+                if health == 100:
+                    heart.full = True
+                    heart.half = False
+                elif health <= 0:
+                    self.playerdeath_s.play()
+                    self.gameover = True
+                    self.display_surface.fill('black')
+                    self.background = Background(self.display_surface,self, False, True)
+                if health == int(str(str(index - 1) + "5")):
+                    heart.full = False
+                    heart.half = True
+                elif health >= int(str(str(index - 1) + "5")):
+                    heart.full = True
+                    heart.half = False
+                elif health == int(str(str(index - 1) + "0")):
+                    heart.full = False
+                    heart.half = False
+            else:
+                if self.artifact_increment:
+                    heart.count += 1
 
     def run(self, click):
         if not self.gameover:
@@ -289,6 +341,8 @@ class Level:
             self.tiles.draw(self.display_surface)
             self.border.update(self.world_shift)
             self.border.draw(self.display_surface)
+            self.portals.update(self.world_shift)
+            self.portals.draw(self.display_surface)
             
             #Player
             self.player.update()
@@ -298,6 +352,7 @@ class Level:
             self.create_landing_dust()
             self.player.draw(self.display_surface)
             self.player_collision_pickup()
+            self.player_collision_portal()
 
             self.update_gui()
 
@@ -313,6 +368,8 @@ class Level:
             self.decor.update(self.world_shift)
             self.decor.draw(self.display_surface)
             self.scroll_x()
+            
+            self.artifact_increment = False
         
         else:
             self.tiles.empty()

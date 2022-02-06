@@ -10,6 +10,8 @@ class Player(pygame.sprite.Sprite):
         self.walk.set_volume(0.1)
         self.jump_s = mixer.Sound('sounds/jump.wav')
         self.jump_s.set_volume(0.1)
+        self.land_s = mixer.Sound('sounds/land.wav')
+        self.land_s.set_volume(0.1)
         self.import_character_assets()
         self.frame_index = 0
         self.animation_speed = 0.05
@@ -41,6 +43,8 @@ class Player(pygame.sprite.Sprite):
 
         #player health
         self.health = 100
+
+        self.landed = True
 
     def import_character_assets(self):
         character_path = 'graphics/character/'
@@ -121,11 +125,20 @@ class Player(pygame.sprite.Sprite):
             self.direction.x = 0
             self.walk.stop()
 
+        if not self.on_ground:
+            self.landed = False
+
+        if self.on_ground:
+            if not self.landed:
+                self.land_s.play()
+                self.landed = True
+
         if keys[pygame.K_UP] and self.on_ground and not (self.on_left or self.on_right):
             self.jump_speed = -5
             self.jump()
             self.create_jump_particles(self.rect.midbottom)
             self.jump_s.play()
+
         elif keys[pygame.K_UP] and (keys[pygame.K_LEFT] or keys[pygame.K_RIGHT]) and self.on_ground and self.status == 'climb' and not self.touching_border:
             self.jump_speed = -1
             self.jump()

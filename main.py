@@ -22,17 +22,30 @@ menu = True
 mixer.init()
 click_s = mixer.Sound('sounds/select.wav')
 click_s.set_volume(0.1)
+mixer.music.load('sounds/theme_main.mp3')
+mixer.music.set_volume(0.3)
+mixer.music.play(-1)
 
 if platform.system() == "Windows":
     import win32gui, win32con
 
     hwnd = win32gui.GetForegroundWindow()
     win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
-    
+
 elif platform.system() == "Linux":
     window.maximize()
 
+previous_level = 0
+level_changed = False
+
 while True:
+    with open('data/current_level.dat', 'r') as l:
+        current_level = int(l.readlines()[0])
+        if current_level > previous_level:
+            level_changed = True
+        previous_level = current_level
+        print(current_level)
+
     click = False
     
     #pygame.event.post(pygame.event.Event(pygame.VIDEOEXPOSE))
@@ -53,30 +66,43 @@ while True:
             pygame.display.update()
 
     try:
+        if level_changed:
+            click_s.play()
+            del level
+            del background
+            objects.fill('black')
+            SCREEN.fill('black')
+            reset = True
+            spawned = False
+            level_changed = False
+
         if menu:
             if 'level' not in locals():
-                level = Level(LEVEL_MAP, objects)
-            if 'background' not in locals():
-                background = Background(objects,level,False,True)
-            level.world_shift = 1
-            background.update()
-            clicked = background.render(click)
-            header = Text('The Weird World', 'black', objects, (objects.get_rect().width/2, objects.get_rect().height/6), 7)
-            header.draw()
-            playButton = Button('Play', 'white', 'black', objects, SCREEN, 7, (objects.get_rect().width/2, objects.get_rect().height/3), click)
-            playClicked = playButton.update()
-            quitButton = Button('Quit', 'white', 'black', objects, SCREEN, 7, (objects.get_rect().width/2, objects.get_rect().height/2), click)
-            quitClicked = quitButton.update()
-            SCREEN.blit(pygame.transform.scale(objects, SCREEN.get_size()), (0, 0))
-            if quitClicked:
-                click_s.play()
-                break
-            elif playClicked:
-                click_s.play()
-                level.world_shift = 0
-                objects.fill('black')
-                SCREEN.fill('black')
-                menu = False
+                try:
+                    level = Level(levels[current_level], objects)
+                    if 'background' not in locals():
+                        background = Background(objects,level,False,True)
+                    level.world_shift = 1
+                    background.update()
+                    clicked = background.render(click)
+                    header = Text('The Weird World', 'black', objects, (objects.get_rect().width/2, objects.get_rect().height/6), 7)
+                    header.draw()
+                    playButton = Button('Play', 'white', 'black', objects, SCREEN, 7, (objects.get_rect().width/2, objects.get_rect().height/3), click)
+                    playClicked = playButton.update()
+                    quitButton = Button('Quit', 'white', 'black', objects, SCREEN, 7, (objects.get_rect().width/2, objects.get_rect().height/2), click)
+                    quitClicked = quitButton.update()
+                    SCREEN.blit(pygame.transform.scale(objects, SCREEN.get_size()), (0, 0))
+                    if quitClicked:
+                        click_s.play()
+                        break
+                    elif playClicked:
+                        click_s.play()
+                        level.world_shift = 0
+                        objects.fill('black')
+                        SCREEN.fill('black')
+                        menu = False
+                except:
+                    print("GAME COMPLETE")
         else:
             background.update()
             clicked = background.render(click)
@@ -109,9 +135,12 @@ while True:
     except Exception as e:
         print(e)
         if not spawned:
-            level = Level(LEVEL_MAP, objects)
-            background = Background(objects,level,True,False)
-            spawned = True
+            try:
+                level = Level(levels[current_level], objects)
+                background = Background(objects,level,True,False)
+                spawned = True
+            except:
+                print("GAME COMPLETE")
         reset = False
     
     pygame.display.update()

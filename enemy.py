@@ -1,11 +1,17 @@
 import pygame
+from support import import_folder
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, pos, surface, player):
         super().__init__()
+        self.import_character_assets()
+        self.frame_index = 0
+        self.animation_speed = 0.05
         self.image = pygame.Surface((16,16))
-        self.image.fill('purple')
+        self.status = 'run'
+        self.image = self.animations['attack'][self.frame_index]
         self.rect = self.image.get_rect(topleft = pos)
+        self.display_surface = surface
         self.display_surface = surface
 
         self.direction = pygame.math.Vector2(0,0)
@@ -20,6 +26,7 @@ class Enemy(pygame.sprite.Sprite):
         self.on_left = False
         self.on_right = False
         self.touching_border = False
+        self.touching_player = False
 
         #movement to player
         self.player = player
@@ -50,6 +57,10 @@ class Enemy(pygame.sprite.Sprite):
     def look_at_player(self):
         self.playersprite = self.player.sprite
         self.player_direction = pygame.math.Vector2(self.rect.x - self.playersprite.rect.x, self.rect.y - self.playersprite.rect.y)
+        if not self.touching_player:
+            self.status = 'run'
+        else:
+            self.status = 'attack'
 
     def move_to_player(self):
         self.x_distance = self.player_direction.x
@@ -57,20 +68,65 @@ class Enemy(pygame.sprite.Sprite):
         if self.x_distance <= self.radius:
             if self.x_distance < 0:
                 self.direction.x = 1
-                self.facing_right = False
+                self.facing_right = True
             else:
                 self.direction.x = -1
-                self.facing_right = True
+                self.facing_right = False
         elif self.x_distance > self.radius:
             self.direction.x = 0
         
         if self.on_right or self.on_left:
+            self.status = 'climb'
             self.jump()
+
+    def import_character_assets(self):
+        character_path = 'graphics/enemy/'
+        self.animations = {
+            'attack':[],
+            'run':[],
+            'climb':[]
+        }
+
+        for animation in self.animations.keys():
+            full_path = character_path + animation
+            self.animations[animation] = import_folder(full_path)
+
+    def import_dust_run_particles(self):
+        self.dust_run_particles = import_folder('graphics/character/dust_particles/run')
+
+    def animate(self):
+        animation = self.animations[self.status]
+
+        self.frame_index += self.animation_speed
+        if self.frame_index >= len(animation):
+            self.frame_index = 0
+
+        image = animation[int(self.frame_index)]
+        if self.facing_right:
+            self.image = image
+        else:
+            flipped_image = pygame.transform.flip(image,True,False)
+            self.image = flipped_image
+
+        # set the rect
+        if self.on_ground and self.on_right:
+            self.rect = self.image.get_rect(bottomright = self.rect.bottomright)
+        elif self.on_ground and self.on_left:
+            self.rect = self.image.get_rect(bottomleft = self.rect.bottomleft)
+        elif self.on_ground:
+            self.rect = self.image.get_rect(midbottom = self.rect.midbottom)
+        elif self.on_ceiling and self.on_right:
+            self.rect = self.image.get_rect(topright = self.rect.topright)
+        elif self.on_ceiling and self.on_left:
+            self.rect = self.image.get_rect(topleft = self.rect.topleft)
+        elif self.on_ceiling:
+            self.rect = self.image.get_rect(midtop = self.rect.midtop)
         
     def update(self, world_shift):
         if self.player:
             self.look_at_player()
             self.move_to_player()
         #self.get_input()
+        self.animate()
         self.world_shift = world_shift
         self.rect.x += self.world_shift
