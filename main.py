@@ -25,7 +25,6 @@ mixer.music.load('sounds/theme_main.mp3')
 mixer.music.set_volume(0.3)
 mixer.music.play(-1)
 
-
 window.maximize()
 
 previous_level = 0
